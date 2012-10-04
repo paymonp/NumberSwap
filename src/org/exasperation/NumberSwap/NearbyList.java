@@ -87,10 +87,14 @@ public class NearbyList extends Activity implements MessageListener
         refreshButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v)
             {
-                client.sendMessage("init "+currentLocation.getLatitude()+" "
+		if (currentLocation != null) {
+                    client.sendMessage("init "+currentLocation.getLatitude()+" "
                                           +currentLocation.getLongitude()+" "
                                           +"Junseok"+" "
                                           +"4545454545");
+		}
+		locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+        	locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
             }
         });
 
@@ -108,19 +112,26 @@ public class NearbyList extends Activity implements MessageListener
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
-                if (location != null)
-                    currentLocation = location;
-                if (location.getProvider() == LocationManager.GPS_PROVIDER)
-                    locationManager.removeUpdates(locationListener);
+		if (location == null)
+			return;
+                
+		currentLocation = location;
 
-                if (currentLocation == null)
-                    client.sendMessage("test");
-                else
-                    client.sendMessage("init "+location.getLatitude()+" "
-                                              +location.getLongitude()+" "
-                                              +"Junseok"+" "
-                                              +"4545454545");
-                    //client.sendMessage(""+currentLocation.getLatitude());
+                client.sendMessage("init "+location.getLatitude()+" "
+                                          +location.getLongitude()+" "
+                                          +"Junseok"+" "
+                                          +"4545454545");
+
+		if (location.getProvider() == LocationManager.GPS_PROVIDER) {
+		    Log.d(TAG, "GPS update");
+		}
+		else if (location.getProvider() == LocationManager.NETWORK_PROVIDER) {
+		    Log.d(TAG, "Network update");
+		}
+
+		// stop listening until user presses refresh to save power
+		locationManager.removeUpdates(locationListener);
+
                 Log.d(TAG, "location changed");
             }
             public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -128,7 +139,7 @@ public class NearbyList extends Activity implements MessageListener
             }
 
             public void onProviderEnabled(String provider) {
-                Log.d(TAG, "provider disabled:" + provider);
+                Log.d(TAG, "provider enabled:" + provider);
             }
             public void onProviderDisabled(String provider) {
                 Log.d(TAG, "provider disabled:" + provider);
@@ -319,51 +330,6 @@ public class NearbyList extends Activity implements MessageListener
             Toast.makeText(c, "Exception: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
-    /*
-        ContentValues values = new ContentValues();
-        values.put(Data.DISPLAY_NAME, name);
-        Uri rawContactUri = getContentResolver().insert(RawContacts.CONTENT_URI, values);
-        long rawContactId = ContentUris.parseId(rawContactUri);
-        long contactId = getContactId(c, rawContactId);
-        System.out.println("rawContactId = " + rawContactId);
-        System.out.println("contactId = " + contactId);
-
-        values.clear();
-        values.put(Phone.NUMBER, phone);
-        values.put(Phone.TYPE, Phone.TYPE_OTHER);
-        values.put(Phone.MIMETYPE, Phone.CONTENT_ITEM_TYPE);
-        values.put(Data.RAW_CONTACT_ID, rawContactId);
-        getContentResolver().insert(Data.CONTENT_URI, values);
-
-        values.clear();
-        values.put(Data.MIMETYPE, Data.CONTENT_TYPE);
-        values.put(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name);
-        values.put(Data.RAW_CONTACT_ID, rawContactId);
-        getContentResolver().insert(Data.CONTENT_URI, values);
-
-        values.clear();
-        values.put(Data.MIMETYPE, StructuredName.CONTENT_ITEM_TYPE);
-        values.put(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name);
-        values.put(Data.RAW_CONTACT_ID, rawContactId);
-        getContentResolver().insert(Data.CONTENT_URI, values);
-    }
-    
-    public static long getContactId(Context context, long rawContactId) {
-        Cursor cur = null;
-        try {
-            cur = context.getContentResolver().query(ContactsContract.RawContacts.CONTENT_URI, new String[] { ContactsContract.RawContacts.CONTACT_ID }, ContactsContract.RawContacts._ID + "=" + rawContactId, null, null);
-            if (cur.moveToFirst()) {
-                return cur.getLong(cur.getColumnIndex(ContactsContract.RawContacts.CONTACT_ID));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (cur != null) {
-                cur.close();
-            }
-        }
-        return -1;
-    }*/
 
 
     private class WaitTask extends AsyncTask<User, Integer, Boolean>
